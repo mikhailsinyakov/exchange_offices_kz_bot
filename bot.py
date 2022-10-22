@@ -46,6 +46,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(get_greeting_msg(suggested_language, update.effective_user.first_name), parse_mode="HTML", reply_markup=keyboard)
 
+async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    city = context.user_data["city"]
+    lang = context.user_data["language"]
+
+    msg = f"<b>{'City' if lang == 'en' else 'Город'}</b>: {city.capitalize()}\n"
+    msg += "<b>Language</b>: English" if lang == "en" else "<b>Язык</b>: Русский"
+
+    await update.message.reply_text(msg, parse_mode="HTML")
+
 async def choose_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data["language"]
     n_keyboard_cols = 3
@@ -79,6 +88,7 @@ if __name__ == "__main__":
     app = ApplicationBuilder().token(os.environ.get("TELEGRAM_API_TOKEN")).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("settings", show_settings))
     app.add_handler(CallbackQueryHandler(choose_city, "choose_city"))
     app.add_handler(CallbackQueryHandler(set_user_city, r"^set_user_city_[a-z]+"))
     app.add_handler(CallbackQueryHandler(change_language, "change_language"))
