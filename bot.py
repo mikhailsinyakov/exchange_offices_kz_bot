@@ -16,7 +16,7 @@ load_dotenv()
 def get_greeting_msg(lang, username):
     if lang == "ru":
         msg = f"""
-            Привет, <b>{username}**</b>! Я помогу тебе найти обменники в Казахстане с наиболее выгодным курсом.
+            Привет, <b>{username}</b>! Я помогу тебе найти обменники в Казахстане с наиболее выгодным курсом.
             Для начала тебе нужно выбрать город, в котором ты находишься.
         """
     else:
@@ -26,12 +26,8 @@ def get_greeting_msg(lang, username):
         """
     return dedent(msg)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_lang = update.effective_user.language_code
-    suggested_language = "ru" if user_lang == "ru" else "en"
-
-    context.user_data["language"] = suggested_language
-
+async def greet_user(update, context):
+    lang = context.user_data["language"]
     buttons = {
         "en": ["Choose a city", "Использовать русский язык"],
         "ru": ["Выбрать город", "Switch to English"]
@@ -39,12 +35,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = InlineKeyboardMarkup(
         [[
-            InlineKeyboardButton(buttons[suggested_language][0], callback_data="choose_city"),
-            InlineKeyboardButton(buttons[suggested_language][1], callback_data="change_language")
+            InlineKeyboardButton(buttons[lang][0], callback_data="choose_city"),
+            InlineKeyboardButton(buttons[lang][1], callback_data="change_language")
         ]]
     )
+    if update.message is not None:
+        await update.message.reply_text(get_greeting_msg(lang, update.effective_user.first_name), parse_mode="HTML", reply_markup=keyboard)
+    else:
+        await update.callback_query.edit_message_text(get_greeting_msg(lang, update.effective_user.first_name), parse_mode="HTML", reply_markup=keyboard)
 
-    await update.message.reply_text(get_greeting_msg(suggested_language, update.effective_user.first_name), parse_mode="HTML", reply_markup=keyboard)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_lang = update.effective_user.language_code
+    suggested_language = "ru" if user_lang == "ru" else "en"
+
+    context.user_data["language"] = suggested_language
+    await greet_user(update, context)
 
 async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     city = context.user_data["city"]
@@ -82,7 +87,10 @@ async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(update.effective_chat.id, text_msg)
 
 async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    curr_lang = context.user_data["language"]
+    context.user_data["language"] = "ru" if curr_lang == "en" else "en"
+
+    await greet_user(update, context)
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(os.environ.get("TELEGRAM_API_TOKEN")).build()
