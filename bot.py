@@ -3,7 +3,7 @@ import logging
 from textwrap import dedent
 
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from constants import cities_en, cities_ru
 
@@ -46,6 +46,13 @@ async def greet_user(update, context):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_lang = update.effective_user.language_code
+    await context.bot.set_my_commands([
+        BotCommand("settings", "Show current settings")
+    ])
+    await context.bot.set_my_commands([
+        BotCommand("settings", "Показать текущие настройки")
+    ], language_code="ru")
+
     suggested_language = "ru" if user_lang == "ru" else "en"
 
     context.user_data["language"] = suggested_language
