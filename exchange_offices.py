@@ -42,7 +42,7 @@ def get_offices_info(city):
             continue
     
     return offices
-    
+
 
 def get_purchase_amount(office_info, sale_currency, purchase_currency, sale_amount):
     if sale_currency == "KZT":

@@ -3,9 +3,11 @@ import logging
 from textwrap import dedent
 
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, BotCommand
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
+
 from constants import cities_en, cities_ru
+from exchange_offices import get_offices_info, find_best_offices
 
 logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -47,10 +49,12 @@ async def greet_user(update, context):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_lang = update.effective_user.language_code
     await context.bot.set_my_commands([
-        BotCommand("settings", "Show current settings")
+        BotCommand("settings", "Show current settings"),
+        BotCommand("find_best_offices", "Find offices with best currency rates")
     ])
     await context.bot.set_my_commands([
-        BotCommand("settings", "Показать текущие настройки")
+        BotCommand("settings", "Показать текущие настройки"),
+        BotCommand("find_best_offices", "Найти обменники с лучшими курсами валют")
     ], language_code="ru")
 
     suggested_language = "ru" if user_lang == "ru" else "en"
@@ -99,13 +103,75 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await greet_user(update, context)
 
+async def find_offices_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["transaction"] = {
+        "sale_currency": None,
+        "purchase_currency": None,
+        "sale_amount": None
+    }
+
+    lang = context.user_data["language"]
+    msg = {
+        "en": "Enter a sale currency:",
+        "ru": "Введите валюту продажи:"
+    }
+    keyboard = ReplyKeyboardMarkup([["USD", "EUR", "RUB", "KZT"]], one_time_keyboard=True, resize_keyboard=True)
+    await update.message.reply_text(msg[lang], reply_markup=keyboard)
+
+async def find_offices_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if "transaction" in context.user_data:
+        if context.user_data["transaction"]["sale_currency"] is None:
+            sale_currency = update.message.text
+            context.user_data["transaction"]["sale_currency"] = sale_currency
+
+            lang = context.user_data["language"]
+            msg = {
+                "en": "Enter a purchase currency:",
+                "ru": "Введите валюту покупки:"
+            }
+            currencies = [c for c in ["USD", "EUR", "RUB", "KZT"] if c != sale_currency]
+            keyboard = ReplyKeyboardMarkup([currencies], one_time_keyboard=True, resize_keyboard=True)
+            await update.message.reply_text(msg[lang], reply_markup=keyboard)
+        elif context.user_data["transaction"]["purchase_currency"] is None:
+            purchase_currency = update.message.text
+            context.user_data["transaction"]["purchase_currency"] = purchase_currency
+
+            lang = context.user_data["language"]
+            msg = {
+                "en": "Enter a sale amount:",
+                "ru": "Введите сумму продажи:"
+            }
+            await update.message.reply_text(msg[lang])
+        elif context.user_data["transaction"]["sale_amount"] is None:
+            sale_currency = context.user_data["transaction"]["sale_currency"]
+            purchase_currency = context.user_data["transaction"]["purchase_currency"]
+            sale_amount = float(update.message.text)
+            del context.user_data["transaction"]
+            
+            offices = get_offices_info(context.user_data["city"])
+            best_offices, purchase_amount = find_best_offices(offices, sale_currency, purchase_currency, sale_amount)
+            best_offices_addresses = [of["address"] for of in best_offices]
+
+            lang = context.user_data["language"]
+            end_of_line = "\n"
+            msg = {
+                "en": f"Your purchase amount is {purchase_amount:.2f}{purchase_currency}{end_of_line}List of office addresses:{end_of_line}{end_of_line.join(best_offices_addresses)}",
+                "ru": f"Сумма покупки: {purchase_amount:.2f}{purchase_currency}{end_of_line}Список адресов обменников:{end_of_line}{end_of_line.join(best_offices_addresses)}"
+            }
+            await update.message.reply_text(msg[lang])
+
+
+
 if __name__ == "__main__":
     app = ApplicationBuilder().token(os.environ.get("TELEGRAM_API_TOKEN")).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("settings", show_settings))
+    app.add_handler(CommandHandler("find_best_offices", find_offices_command_handler))
+
     app.add_handler(CallbackQueryHandler(choose_city, "choose_city"))
     app.add_handler(CallbackQueryHandler(set_user_city, r"^set_user_city_[a-z]+"))
     app.add_handler(CallbackQueryHandler(change_language, "change_language"))
+    app.add_handler(MessageHandler(filters=filters.TEXT, callback=find_offices_message_handler))
 
     app.run_polling()
