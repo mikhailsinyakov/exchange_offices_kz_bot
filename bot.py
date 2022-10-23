@@ -59,8 +59,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await greet_user(update, context)
 
 async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    city = context.user_data["city"]
-    lang = context.user_data["language"]
+    city = context.user_data.get("city", "Unset")
+    lang = context.user_data.get("language", "Unset")
 
     msg = f"<b>{'City' if lang == 'en' else 'Город'}</b>: {city.capitalize()}\n"
     msg += "<b>Language</b>: English" if lang == "en" else "<b>Язык</b>: Русский"
