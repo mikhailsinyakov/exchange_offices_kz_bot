@@ -17,7 +17,6 @@ def get_url_source(url):
     return driver.page_source
 
 def get_offices_info(city):
-
     url = f"https://kurs.kz/index.php?mode={city}"
     html = get_url_source(url)
     soup = BeautifulSoup(html, "html.parser")
@@ -45,5 +44,35 @@ def get_offices_info(city):
     return offices
     
 
+def get_purchase_amount(office_info, sale_currency, purchase_currency, sale_amount):
+    if sale_currency == "KZT":
+        currency_rate = office_info[purchase_currency][1]
+        return sale_amount / currency_rate
+    elif purchase_currency == "KZT":
+        currency_rate = office_info[sale_currency][0]
+        return sale_amount * currency_rate
+    else:
+        currency_rate1 = office_info[sale_currency][0]
+        kz_amount = sale_amount * currency_rate1
+
+        currency_rate2 = office_info[purchase_currency][1]
+        return kz_amount / currency_rate2
+    
+
+def find_best_offices(offices, sale_currency, purchase_currency, sale_amount):
+    max_amount = 0
+    best_offices = []
+    for office_info in offices:
+        purchase_amount = get_purchase_amount(office_info, sale_currency, purchase_currency, sale_amount)
+        if purchase_amount > max_amount:
+            best_offices = [office_info]
+            max_amount = purchase_amount
+        elif purchase_amount == max_amount:
+            best_offices.append(office_info)
+    
+    return best_offices, max_amount
+
+
+
 if __name__ == "__main__":
-    get_offices_info("astana")
+    offices = get_offices_info("astana")
