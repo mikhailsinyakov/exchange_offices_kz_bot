@@ -30,7 +30,7 @@ def get_greeting_msg(lang, username):
     return dedent(msg)
 
 async def greet_user(update, context):
-    lang = context.user_data["language"]
+    lang = context.user_data.get("language", "en")
     buttons = {
         "en": ["Choose a city", "Использовать русский язык"],
         "ru": ["Выбрать город", "Switch to English"]
@@ -77,7 +77,7 @@ async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode="HTML")
 
 async def choose_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = context.user_data["language"]
+    lang = context.user_data.get("language", "en")
     n_keyboard_cols = 3
     btns = []
     for i in range(len(cities_en)):
@@ -95,7 +95,7 @@ async def choose_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(update.effective_chat.id, text_msg, reply_markup=keyboard)
 
 async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = context.user_data["language"]
+    lang = context.user_data.get("language", "en")
     city = update.callback_query.data.split("_")[-1]
 
     context.user_data["city"] = city
@@ -124,7 +124,7 @@ async def find_offices_command_handler(update: Update, context: ContextTypes.DEF
         "sale_amount": None
     }
 
-    lang = context.user_data["language"]
+    lang = context.user_data.get("language", "en")
     msg = {
         "en": "Enter a sale currency:",
         "ru": "Введите валюту продажи:"
@@ -138,7 +138,7 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         sale_currency = update.message.text
         context.user_data["transaction"]["sale_currency"] = sale_currency
 
-        lang = context.user_data["language"]
+        lang = context.user_data.get("language", "en")
         msg = {
             "en": "Enter a purchase currency:",
             "ru": "Введите валюту покупки:"
@@ -151,7 +151,7 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         purchase_currency = update.message.text
         context.user_data["transaction"]["purchase_currency"] = purchase_currency
 
-        lang = context.user_data["language"]
+        lang = context.user_data.get("language", "en")
         msg = {
             "en": "Enter a sale amount:",
             "ru": "Введите сумму продажи:"
@@ -159,7 +159,7 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         await update.message.reply_text(msg[lang])
         
     elif context.user_data["transaction"]["sale_amount"] is None:
-        lang = context.user_data["language"]
+        lang = context.user_data.get("language", "en")
         try:
             sale_amount = float(update.message.text)
         except ValueError:
@@ -217,6 +217,13 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "transaction" in context.user_data:
         await find_offices_message_handler(update, context)
+    else:
+        lang = context.user_data.get("language", "en")
+        msg = {
+            "en": "I don't quite understand what do you want from me",
+            "ru": "Я не совсем понял, что вас интересует"
+        }
+        await update.message.reply_text(msg[lang])
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(os.environ.get("TELEGRAM_API_TOKEN")).build()
