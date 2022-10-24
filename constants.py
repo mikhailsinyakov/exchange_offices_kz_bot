@@ -1,2 +1,5 @@
 cities_en = ["Almaty", "Astana", "Taldykorgan", "Kostanai", "Aktobe", "Aktau", "Ridder", "Shymkent", "Pavlodar", "Uralsk", "Kaskelen", "Semei", "Petropavlovsk"]
 cities_ru = ["Алматы", "Астана", "Талдыкорган", "Костанай", "Актобе", "Актау", "Риддер", "Шимкент", "Павлодар", "Уральск", "Каскелен", "Семей", "Петропавловск"]
+currency_names_en = ["Dollar", "Euro", "Rouble", "Tenge"]
+currency_names_ru = ["Доллар", "Евро", "Рубль", "Тенге"]
+currencies = ["USD", "EUR", "RUB", "KZT"]

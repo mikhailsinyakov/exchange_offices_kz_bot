@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 
-from constants import cities_en, cities_ru
+from constants import cities_en, cities_ru, currency_names_en, currency_names_ru, currencies
 from exchange_offices import get_offices_info, find_best_offices
 from geocode import geocode
 
@@ -119,75 +119,83 @@ async def find_offices_command_handler(update: Update, context: ContextTypes.DEF
         "en": "Enter a sale currency:",
         "ru": "Введите валюту продажи:"
     }
-    keyboard = ReplyKeyboardMarkup([["USD", "EUR", "RUB", "KZT"]], one_time_keyboard=True, resize_keyboard=True)
+    currency_names = currency_names_en if lang == "en" else currency_names_ru
+    keyboard = ReplyKeyboardMarkup([currency_names], one_time_keyboard=True, resize_keyboard=True)
     await update.message.reply_text(msg[lang], reply_markup=keyboard)
 
 async def find_offices_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data["transaction"]["sale_currency"] is None:
+        sale_currency = update.message.text
+        context.user_data["transaction"]["sale_currency"] = sale_currency
+
+        lang = context.user_data["language"]
+        msg = {
+            "en": "Enter a purchase currency:",
+            "ru": "Введите валюту покупки:"
+        }
+        currency_names = currency_names_en if lang == "en" else currency_names_ru
+        currencies_to_show = [c for c in currency_names if c != sale_currency]
+        keyboard = ReplyKeyboardMarkup([currencies_to_show], one_time_keyboard=True, resize_keyboard=True)
+        await update.message.reply_text(msg[lang], reply_markup=keyboard)
+    elif context.user_data["transaction"]["purchase_currency"] is None:
+        purchase_currency = update.message.text
+        context.user_data["transaction"]["purchase_currency"] = purchase_currency
+
+        lang = context.user_data["language"]
+        msg = {
+            "en": "Enter a sale amount:",
+            "ru": "Введите сумму продажи:"
+        }
+        await update.message.reply_text(msg[lang])
+    elif context.user_data["transaction"]["sale_amount"] is None:
+        lang = context.user_data["language"]
+
+        sale_currency_name = context.user_data["transaction"]["sale_currency"]
+        purchase_currency_name = context.user_data["transaction"]["purchase_currency"]
+
+        sale_currency = currencies[currency_names_en.index(sale_currency_name) if lang == "en" else currency_names_ru.index(sale_currency_name)]
+        purchase_currency = currencies[currency_names_en.index(purchase_currency_name) if lang == "en" else currency_names_ru.index(purchase_currency_name)]
+
+        sale_amount = float(update.message.text)
+        del context.user_data["transaction"]
+        
+        city = context.user_data["city"]
+        offices = get_offices_info(city)
+        best_offices, purchase_amount = find_best_offices(offices, sale_currency, purchase_currency, sale_amount)
+        
+
+        purchase_amount_str = {
+            "en": f"Your purchase amount is {purchase_amount:.2f}{purchase_currency}",
+            "ru": f"Сумма покупки: {purchase_amount:.2f}{purchase_currency}"
+        }
+
+        offices_list_str = {
+            "en": "List of offices:\n",
+            "ru": "Список обменников:\n"
+        }
+
+        for office in best_offices:
+            offices_list_str["en"] += f"<b>{office['name']}</b> "
+            offices_list_str["ru"] += f"<b>{office['name']}</b> "
+
+            coords = geocode(f"Kazakhstan, {city}, {office['address']}")
+            if coords is not None:
+                link_url = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
+                offices_list_str["en"] += f"<a href='{link_url}'>On map</a>" + "\n"
+                offices_list_str["ru"] += f"<a href='{link_url}'>На карте</a>" + "\n"
+            else:
+                offices_list_str["en"] += f"<i>{office['address']}</i>" + "\n"
+                offices_list_str["ru"] += f"<i>{office['address']}</i>" + "\n"
+
+        msg = {
+            "en": purchase_amount_str["en"] + "\n" + offices_list_str["en"],
+            "ru": purchase_amount_str["ru"] + "\n" + offices_list_str["ru"]
+        }
+        await update.message.reply_text(msg[lang], parse_mode="HTML")
+
+async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "transaction" in context.user_data:
-        if context.user_data["transaction"]["sale_currency"] is None:
-            sale_currency = update.message.text
-            context.user_data["transaction"]["sale_currency"] = sale_currency
-
-            lang = context.user_data["language"]
-            msg = {
-                "en": "Enter a purchase currency:",
-                "ru": "Введите валюту покупки:"
-            }
-            currencies = [c for c in ["USD", "EUR", "RUB", "KZT"] if c != sale_currency]
-            keyboard = ReplyKeyboardMarkup([currencies], one_time_keyboard=True, resize_keyboard=True)
-            await update.message.reply_text(msg[lang], reply_markup=keyboard)
-        elif context.user_data["transaction"]["purchase_currency"] is None:
-            purchase_currency = update.message.text
-            context.user_data["transaction"]["purchase_currency"] = purchase_currency
-
-            lang = context.user_data["language"]
-            msg = {
-                "en": "Enter a sale amount:",
-                "ru": "Введите сумму продажи:"
-            }
-            await update.message.reply_text(msg[lang])
-        elif context.user_data["transaction"]["sale_amount"] is None:
-            sale_currency = context.user_data["transaction"]["sale_currency"]
-            purchase_currency = context.user_data["transaction"]["purchase_currency"]
-            sale_amount = float(update.message.text)
-            del context.user_data["transaction"]
-            
-            city = context.user_data["city"]
-            offices = get_offices_info(city)
-            best_offices, purchase_amount = find_best_offices(offices, sale_currency, purchase_currency, sale_amount)
-            
-            lang = context.user_data["language"]
-
-            purchase_amount_str = {
-                "en": f"Your purchase amount is {purchase_amount:.2f}{purchase_currency}",
-                "ru": f"Сумма покупки: {purchase_amount:.2f}{purchase_currency}"
-            }
-
-            offices_list_str = {
-                "en": "List of offices:\n",
-                "ru": "Список обменников:\n"
-            }
-
-            for office in best_offices:
-                offices_list_str["en"] += f"<b>{office['name']}</b> "
-                offices_list_str["ru"] += f"<b>{office['name']}</b> "
-
-                coords = geocode(f"Kazakhstan, {city}, {office['address']}")
-                if coords is not None:
-                    link_url = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
-                    offices_list_str["en"] += f"<a href='{link_url}'>On map</a>" + "\n"
-                    offices_list_str["ru"] += f"<a href='{link_url}'>На карте</a>" + "\n"
-                else:
-                    offices_list_str["en"] += f"<i>{office['address']}</i>" + "\n"
-                    offices_list_str["ru"] += f"<i>{office['address']}</i>" + "\n"
-
-            msg = {
-                "en": purchase_amount_str["en"] + "\n" + offices_list_str["en"],
-                "ru": purchase_amount_str["ru"] + "\n" + offices_list_str["ru"]
-            }
-            await update.message.reply_text(msg[lang], parse_mode="HTML")
-
-
+        await find_offices_message_handler(update, context)
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(os.environ.get("TELEGRAM_API_TOKEN")).build()
@@ -199,6 +207,6 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(choose_city, "choose_city"))
     app.add_handler(CallbackQueryHandler(set_user_city, r"^set_user_city_[a-z]+"))
     app.add_handler(CallbackQueryHandler(change_language, "change_language"))
-    app.add_handler(MessageHandler(filters=filters.TEXT, callback=find_offices_message_handler))
+    app.add_handler(MessageHandler(filters=filters.TEXT, callback=message_handler))
 
     app.run_polling()
