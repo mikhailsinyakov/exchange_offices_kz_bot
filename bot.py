@@ -8,6 +8,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 
 from constants import cities_en, cities_ru
 from exchange_offices import get_offices_info, find_best_offices
+from geocode import geocode
 
 logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -85,6 +86,7 @@ async def choose_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     text_msg = "Choose a city:" if lang == "en" else "Выбери город:"
 
+    await update.callback_query.answer()
     await context.bot.send_message(update.effective_chat.id, text_msg, reply_markup=keyboard)
 
 async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -95,12 +97,14 @@ async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text_msg = f"Settings were updated, {city.capitalize()} is your city now" if lang == "en" else f"Я обновил настройки, {city.capitalize()} установлен как ваш город"
 
+    await update.callback_query.answer()
     await context.bot.send_message(update.effective_chat.id, text_msg)
 
 async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     curr_lang = context.user_data["language"]
     context.user_data["language"] = "ru" if curr_lang == "en" else "en"
 
+    await update.callback_query.answer()
     await greet_user(update, context)
 
 async def find_offices_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -148,17 +152,40 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
             sale_amount = float(update.message.text)
             del context.user_data["transaction"]
             
-            offices = get_offices_info(context.user_data["city"])
+            city = context.user_data["city"]
+            offices = get_offices_info(city)
             best_offices, purchase_amount = find_best_offices(offices, sale_currency, purchase_currency, sale_amount)
-            best_offices_addresses = [of["address"] for of in best_offices]
-
+            
             lang = context.user_data["language"]
-            end_of_line = "\n"
-            msg = {
-                "en": f"Your purchase amount is {purchase_amount:.2f}{purchase_currency}{end_of_line}List of office addresses:{end_of_line}{end_of_line.join(best_offices_addresses)}",
-                "ru": f"Сумма покупки: {purchase_amount:.2f}{purchase_currency}{end_of_line}Список адресов обменников:{end_of_line}{end_of_line.join(best_offices_addresses)}"
+
+            purchase_amount_str = {
+                "en": f"Your purchase amount is {purchase_amount:.2f}{purchase_currency}",
+                "ru": f"Сумма покупки: {purchase_amount:.2f}{purchase_currency}"
             }
-            await update.message.reply_text(msg[lang])
+
+            offices_list_str = {
+                "en": "List of offices:\n",
+                "ru": "Список обменников:\n"
+            }
+
+            for office in best_offices:
+                offices_list_str["en"] += f"<b>{office['name']}</b> "
+                offices_list_str["ru"] += f"<b>{office['name']}</b> "
+
+                coords = geocode(f"Kazakhstan, {city}, {office['address']}")
+                if coords is not None:
+                    link_url = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
+                    offices_list_str["en"] += f"<a href='{link_url}'>On map</a>" + "\n"
+                    offices_list_str["ru"] += f"<a href='{link_url}'>На карте</a>" + "\n"
+                else:
+                    offices_list_str["en"] += f"<i>{office['address']}</i>" + "\n"
+                    offices_list_str["ru"] += f"<i>{office['address']}</i>" + "\n"
+
+            msg = {
+                "en": purchase_amount_str["en"] + "\n" + offices_list_str["en"],
+                "ru": purchase_amount_str["ru"] + "\n" + offices_list_str["ru"]
+            }
+            await update.message.reply_text(msg[lang], parse_mode="HTML")
 
 
 
