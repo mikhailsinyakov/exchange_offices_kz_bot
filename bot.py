@@ -50,12 +50,16 @@ async def greet_user(update, context):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_lang = update.effective_user.language_code
     await context.bot.set_my_commands([
+        BotCommand("find_best_offices", "Find offices with best currency rates"),
         BotCommand("settings", "Show current settings"),
-        BotCommand("find_best_offices", "Find offices with best currency rates")
+        BotCommand("edit_city", "Edit your current city"),
+        BotCommand("switch_language", "Switch language to Russian")
     ])
     await context.bot.set_my_commands([
+        BotCommand("find_best_offices", "Найти обменники с лучшими курсами валют"),
         BotCommand("settings", "Показать текущие настройки"),
-        BotCommand("find_best_offices", "Найти обменники с лучшими курсами валют")
+        BotCommand("edit_city", "Изменить город"),
+        BotCommand("switch_language", "Изменить язык на английский")
     ], language_code="ru")
 
     suggested_language = "ru" if user_lang == "ru" else "en"
@@ -86,7 +90,8 @@ async def choose_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     text_msg = "Choose a city:" if lang == "en" else "Выбери город:"
 
-    await update.callback_query.answer()
+    if update.callback_query is not None:
+        await update.callback_query.answer()
     await context.bot.send_message(update.effective_chat.id, text_msg, reply_markup=keyboard)
 
 async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -102,10 +107,15 @@ async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     curr_lang = context.user_data["language"]
-    context.user_data["language"] = "ru" if curr_lang == "en" else "en"
+    new_lang = "ru" if curr_lang == "en" else "en"
+    context.user_data["language"] = new_lang
 
-    await update.callback_query.answer()
-    await greet_user(update, context)
+    if update.callback_query is not None:
+        await update.callback_query.answer()
+        await greet_user(update, context)
+    else:
+        msg = "Language has been changed" if new_lang == "en" else "Язык изменен"
+        await context.bot.send_message(update.effective_chat.id, msg)
 
 async def find_offices_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["transaction"] = {
@@ -214,6 +224,8 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("settings", show_settings))
     app.add_handler(CommandHandler("find_best_offices", find_offices_command_handler))
+    app.add_handler(CommandHandler("edit_city", choose_city))
+    app.add_handler(CommandHandler("switch_language", change_language))
 
     app.add_handler(CallbackQueryHandler(choose_city, "choose_city"))
     app.add_handler(CallbackQueryHandler(set_user_city, r"^set_user_city_[a-z]+"))
