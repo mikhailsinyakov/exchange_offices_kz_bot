@@ -147,8 +147,19 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
             "ru": "Введите сумму продажи:"
         }
         await update.message.reply_text(msg[lang])
+        
     elif context.user_data["transaction"]["sale_amount"] is None:
         lang = context.user_data["language"]
+        try:
+            sale_amount = float(update.message.text)
+        except ValueError:
+            error_msg = {
+                "en": "Please type a number here",
+                "ru": "Необходимо ввести число"
+            }
+            await update.message.reply_text(error_msg[lang])
+            return
+
 
         sale_currency_name = context.user_data["transaction"]["sale_currency"]
         purchase_currency_name = context.user_data["transaction"]["purchase_currency"]
@@ -156,7 +167,7 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         sale_currency = currencies[currency_names_en.index(sale_currency_name) if lang == "en" else currency_names_ru.index(sale_currency_name)]
         purchase_currency = currencies[currency_names_en.index(purchase_currency_name) if lang == "en" else currency_names_ru.index(purchase_currency_name)]
 
-        sale_amount = float(update.message.text)
+        
         del context.user_data["transaction"]
         
         city = context.user_data["city"]
