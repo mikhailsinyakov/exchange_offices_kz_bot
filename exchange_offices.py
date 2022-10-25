@@ -6,7 +6,7 @@ from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from helpers import get_clean_address
 
-def get_url_source(url):
+def get_page_source(url):
     chrome_options = Options()
     prefs = {"profile.managed_default_content_settings.images": 2}
     chrome_options.add_experimental_option("prefs", prefs)
@@ -18,7 +18,7 @@ def get_url_source(url):
 
 def get_offices_info(city):
     url = f"https://kurs.kz/index.php?mode={city}"
-    html = get_url_source(url)
+    html = get_page_source(url)
     soup = BeautifulSoup(html, "html.parser")
     
     offices = []
