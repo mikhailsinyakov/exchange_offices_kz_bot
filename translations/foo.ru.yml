@@ -1,0 +1,43 @@
+ru:
+  hi: Привет
+  greeting: Я помогу тебе найти обменники в Казахстане с наиболее выгодным курсом. Для начала тебе нужно выбрать город, в котором ты находишься.
+  choose_city: Выбрать город
+  switch_language_foreign: Switch to English
+  find_best_offices: Найти обменники с лучшими курсами валют
+  show_settings: Показать текущие настройки
+  edit_city: Изменить город
+  switch_language: Изменить язык на английский
+  help: Помощь
+  city: Город
+  language: Язык
+  current_language: русский
+  help_text: Я могу найти обменные пункты с лучшим курсом обмена в Казахстане. Если вы еще этого не сделали, вам нужно указать свой город с помощью команды /edit_city. Далее вам нужно ввести команду /find_best_offices и ввести валюту продажи, валюта покупки и сумма продажи. В результате я верну сумму денег, которую вы получите в результате обмена, а также список названий офисов со ссылкой на точку на карте, где обменный пункт находится
+  choose_city_imperative: Выбери город
+  settings_updated: Я обновил настройки
+  city_was_set: установлен как ваш город
+  language_changed: Язык изменен
+  enter_sale_currency: Введите валюту продажи
+  enter_purchase_currency: Введите валюту покупки
+  enter_sale_amount: Введите сумму продажи
+  need_number: Необходимо ввести число
+  your_purchase_amount: Сумма покупки
+  offices_list: Список обменников
+  on_map: На карте
+  cant_understand: Я не совсем понял, что вас интересует
+  almaty: Алматы
+  astana: Астана
+  taldykorgan: Талдыкорган
+  kostanai: Костанай
+  aktobe: Актобе
+  aktau: Актау
+  ridder: Риддер
+  shymkent: Шимкент
+  pavlodar: Павлодар
+  uralsk: Уральск
+  kaskelen: Каскелен
+  semei: Семей
+  petropavlovsk: Петропавловск
+  dollar: Доллар
+  euro: Евро
+  rouble: Рубль
+  tenge: Тенге

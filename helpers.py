@@ -1,4 +1,5 @@
 import re
+from translation import translate as _
 
 def get_clean_address(address):
     street_index = address.find("ул.")
@@ -18,30 +19,18 @@ def get_clean_address(address):
         return address
 
 
-def get_offices_info_msg(offices_info_for_display, purchase_amount, purchase_currency):
-    purchase_amount_str = {
-        "en": f"Your purchase amount is {purchase_amount:.2f}{purchase_currency}",
-        "ru": f"Сумма покупки: {purchase_amount:.2f}{purchase_currency}"
-    }
+def get_offices_info_msg(offices_info_for_display, purchase_amount, purchase_currency, lang):
+    purchase_amount_str = _("your_purchase_amount", lang) + f" {purchase_amount:.2f}{purchase_currency}"
 
-    offices_list_str = {
-        "en": "List of offices:\n",
-        "ru": "Список обменников:\n"
-    }
+    offices_list_str = _("offices_list", lang) + ":\n"
 
     for office in offices_info_for_display:
-        offices_list_str["en"] += f"<b>{office['name']}</b> "
-        offices_list_str["ru"] += f"<b>{office['name']}</b> "
+        offices_list_str += f"<b>{office['name']}</b> "
 
         if office["location"].startswith("https"):
             link_url = office["location"]
-            offices_list_str["en"] += f"<a href='{link_url}'>On map</a>" + "\n"
-            offices_list_str["ru"] += f"<a href='{link_url}'>На карте</a>" + "\n"
+            offices_list_str += f"<a href='{link_url}'>{_('on_map', lang)}</a>" + "\n"
         else:
-            offices_list_str["en"] += f"<i>{office['location']}</i>" + "\n"
-            offices_list_str["ru"] += f"<i>{office['location']}</i>" + "\n"
+            offices_list_str += f"<i>{office['location']}</i>" + "\n"
 
-    return {
-        "en": purchase_amount_str["en"] + "\n" + offices_list_str["en"],
-        "ru": purchase_amount_str["ru"] + "\n" + offices_list_str["ru"]
-    }
+    return purchase_amount_str + "\n" + offices_list_str

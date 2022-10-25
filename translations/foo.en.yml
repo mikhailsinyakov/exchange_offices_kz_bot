@@ -1,0 +1,43 @@
+en:
+  hi: Hi
+  greeting: I will help you to find exchange offices with the best exchange rate. First you need to choose the city where you are located.
+  choose_city: Choose a city
+  switch_language_foreign: Использовать русский язык
+  find_best_offices: Find offices with best currency rates
+  show_settings: Show current settings
+  edit_city: Edit your current city
+  switch_language: Switch language to Russian
+  help: Get help
+  city: City
+  language: Language
+  current_language: English
+  help_text: I can find exchange offices with the best exchange rate in Kazakhstan. If you haven't already done so, you need to specify your city using the /edit_city command. Next, you need to enter the /find_best_offices command and enter the sales currency, purchase currency and sale amount. As a result, I will return the amount of money that you will receive as a result of the exchange as well as a list of office names with a link to the point on the map where exchange office is located
+  choose_city_imperative: Choose a city
+  settings_updated: Settings were updated
+  city_was_set: was set as your city now
+  language_changed: Language has been changed
+  enter_sale_currency: Enter a sale currency
+  enter_purchase_currency: Enter a purchase currency
+  enter_sale_amount: Enter a sale amount
+  need_number: Please type a number here
+  your_purchase_amount: Your purchase amount is
+  offices_list: List of offices
+  on_map: On map
+  cant_understand: I don't quite understand what do you want from me
+  almaty: Almaty
+  astana: Astana
+  taldykorgan: Taldykorgan
+  kostanai: Kostanai
+  aktobe: Aktobe
+  aktau: Aktau
+  ridder: Ridder
+  shymkent: Shymkent
+  pavlodar: Pavlodar
+  uralsk: Uralsk
+  kaskelen: Kaskelen
+  semei: Semei
+  petropavlovsk: Petropavlovsk
+  dollar: Dollar
+  euro: Euro
+  rouble: Rouble
+  tenge: Tenge
