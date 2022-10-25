@@ -53,13 +53,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         BotCommand("find_best_offices", "Find offices with best currency rates"),
         BotCommand("settings", "Show current settings"),
         BotCommand("edit_city", "Edit your current city"),
-        BotCommand("switch_language", "Switch language to Russian")
+        BotCommand("switch_language", "Switch language to Russian"),
+        BotCommand("help", "Get help")
     ])
     await context.bot.set_my_commands([
         BotCommand("find_best_offices", "Найти обменники с лучшими курсами валют"),
         BotCommand("settings", "Показать текущие настройки"),
         BotCommand("edit_city", "Изменить город"),
-        BotCommand("switch_language", "Изменить язык на английский")
+        BotCommand("switch_language", "Изменить язык на английский"),
+        BotCommand("help", "Помощь")
     ], language_code="ru")
 
     suggested_language = "ru" if user_lang == "ru" else "en"
@@ -75,6 +77,26 @@ async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg += "<b>Language</b>: English" if lang == "en" else "<b>Язык</b>: Русский"
 
     await update.message.reply_text(msg, parse_mode="HTML")
+
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = context.user_data.get("language", "en")
+    msg_en = """
+        I can find exchange offices with the best exchange rate in Kazakhstan.
+        If you haven't already done so, you need to specify your city using the /edit_city command.
+        Next, you need to enter the /find_best_offices command and enter the sales currency,
+        purchase currency and sale amount. As a result, I will return the amount of money that
+        you will receive as a result of the exchange as well as a list of office names with a link to the point on the map where
+        exchange office is located
+    """
+    msg_ru = """
+        Я могу найти обменные пункты с лучшим курсом обмена в Казахстане.
+        Если вы еще этого не сделали, вам нужно указать свой город с помощью команды /edit_city.
+        Далее вам нужно ввести команду /find_best_offices и ввести валюту продажи,
+        валюта покупки и сумма продажи. В результате я верну сумму денег, которую
+        вы получите в результате обмена а также список названий офисов со ссылкой на точку на карте, где
+        обменный пункт находится
+    """
+    await update.message.reply_text(dedent(msg_en) if lang == "en" else dedent(msg_ru))
 
 async def choose_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("language", "en")
@@ -233,6 +255,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("find_best_offices", find_offices_command_handler))
     app.add_handler(CommandHandler("edit_city", choose_city))
     app.add_handler(CommandHandler("switch_language", change_language))
+    app.add_handler(CommandHandler("help", help))
 
     app.add_handler(CallbackQueryHandler(choose_city, "choose_city"))
     app.add_handler(CallbackQueryHandler(set_user_city, r"^set_user_city_[a-z]+"))
