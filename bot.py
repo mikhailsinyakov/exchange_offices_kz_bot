@@ -8,6 +8,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 
 from constants import cities_en, cities_ru, currency_names_en, currency_names_ru, currencies
 from exchange_offices import get_offices_info, find_best_offices
+from helpers import get_offices_info_msg
 from geocode import geocode
 
 logging.basicConfig(
@@ -203,37 +204,24 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         del context.user_data["transaction"]
         
         city = context.user_data["city"]
-        offices = get_offices_info(city)
-        best_offices, purchase_amount = find_best_offices(offices, sale_currency, purchase_currency, sale_amount)
+        all_offices = get_offices_info(city)
+        best_offices, purchase_amount = find_best_offices(all_offices, sale_currency, purchase_currency, sale_amount)
         
-
-        purchase_amount_str = {
-            "en": f"Your purchase amount is {purchase_amount:.2f}{purchase_currency}",
-            "ru": f"Сумма покупки: {purchase_amount:.2f}{purchase_currency}"
-        }
-
-        offices_list_str = {
-            "en": "List of offices:\n",
-            "ru": "Список обменников:\n"
-        }
-
-        for office in best_offices:
-            offices_list_str["en"] += f"<b>{office['name']}</b> "
-            offices_list_str["ru"] += f"<b>{office['name']}</b> "
-
-            coords = geocode(f"Kazakhstan, {city}, {office['address']}")
+        offices_info_for_display = []
+        for best_office in best_offices:
+            office = {}
+            office["name"] = best_office["name"]
+            coords = geocode(f"Kazakhstan, {city}, {best_office['address']}")
             if coords is not None:
                 link_url = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
-                offices_list_str["en"] += f"<a href='{link_url}'>On map</a>" + "\n"
-                offices_list_str["ru"] += f"<a href='{link_url}'>На карте</a>" + "\n"
+                office["location"] = link_url
             else:
-                offices_list_str["en"] += f"<i>{office['address']}</i>" + "\n"
-                offices_list_str["ru"] += f"<i>{office['address']}</i>" + "\n"
-
-        msg = {
-            "en": purchase_amount_str["en"] + "\n" + offices_list_str["en"],
-            "ru": purchase_amount_str["ru"] + "\n" + offices_list_str["ru"]
-        }
+                office["location"] = best_office["address"]
+            
+            offices_info_for_display.append(office)
+        
+        msg = get_offices_info_msg(offices_info_for_display, purchase_amount, purchase_currency)
+        
         await update.message.reply_text(msg[lang], parse_mode="HTML")
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
