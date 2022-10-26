@@ -42,3 +42,4 @@ en:
   rouble: Rouble
   tenge: Tenge
   wait: Wait a second
+  wrong_currency: Currency you entered is not supported

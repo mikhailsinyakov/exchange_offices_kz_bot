@@ -126,24 +126,43 @@ async def find_offices_command_handler(update: Update, context: ContextTypes.DEF
     await update.message.reply_text(_("enter_sale_currency", lang) + ":", reply_markup=keyboard)
 
 async def find_offices_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data["transaction"]["sale_currency"] is None:
-        sale_currency = update.message.text
-        context.user_data["transaction"]["sale_currency"] = sale_currency
+    sale_currency_name = context.user_data["transaction"]["sale_currency"]
+    purchase_currency_name = context.user_data["transaction"]["purchase_currency"]
+    sale_amount = context.user_data["transaction"]["sale_amount"]
+    currency_names_locale = context.user_data["transaction"]["currency_names_locale"]
 
+    if sale_currency_name is None:
         lang = context.user_data.get("language", "en")
-        currency_names_locale = [_(c, lang) for c in currency_names]
-        currencies_to_show = [c for c in currency_names_locale if c != sale_currency]
+        new_sale_currency = update.message.text
+
+        if new_sale_currency not in currency_names_locale:
+            keyboard = ReplyKeyboardMarkup([currency_names_locale], one_time_keyboard=True, resize_keyboard=True)
+            await update.message.reply_text(_("wrong_currency", lang) + ". " + _("enter_sale_currency", lang) + ":", reply_markup=keyboard)
+
+            return
+
+        context.user_data["transaction"]["sale_currency"] = new_sale_currency
+
+        currencies_to_show = [c for c in currency_names_locale if c != new_sale_currency]
 
         keyboard = ReplyKeyboardMarkup([currencies_to_show], one_time_keyboard=True, resize_keyboard=True)
         await update.message.reply_text(_("enter_purchase_currency", lang) + ":", reply_markup=keyboard)
-    elif context.user_data["transaction"]["purchase_currency"] is None:
-        purchase_currency = update.message.text
-        context.user_data["transaction"]["purchase_currency"] = purchase_currency
-
+    elif purchase_currency_name is None:
         lang = context.user_data.get("language", "en")
+        new_purchase_currency = update.message.text
+
+        if new_purchase_currency not in currency_names_locale:
+            currencies_to_show = [c for c in currency_names_locale if c != sale_currency_name]
+            keyboard = ReplyKeyboardMarkup([currencies_to_show], one_time_keyboard=True, resize_keyboard=True)
+            await update.message.reply_text(_("wrong_currency", lang) + ". " + _("enter_purchase_currency", lang) + ":", reply_markup=keyboard)
+
+            return
+
+        context.user_data["transaction"]["purchase_currency"] = new_purchase_currency
+
         await update.message.reply_text(_("enter_sale_amount", lang) + ":")
         
-    elif context.user_data["transaction"]["sale_amount"] is None:
+    elif sale_amount is None:
         lang = context.user_data.get("language", "en")
         try:
             sale_amount = float(update.message.text)
@@ -152,10 +171,6 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
             return
 
         wait_msg = await update.message.reply_text(_("wait", lang) + " ...")
-
-        sale_currency_name = context.user_data["transaction"]["sale_currency"]
-        purchase_currency_name = context.user_data["transaction"]["purchase_currency"]
-        currency_names_locale = context.user_data["transaction"]["currency_names_locale"]
 
         sale_currency = currencies[currency_names_locale.index(sale_currency_name)]
         purchase_currency = currencies[currency_names_locale.index(purchase_currency_name)]
@@ -182,7 +197,6 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         msg = get_offices_info_msg(offices_info_for_display, purchase_amount, purchase_currency, lang)
         
         await context.bot.edit_message_text(text=msg, chat_id=update.effective_chat.id, message_id=wait_msg.id, parse_mode="HTML")
-        #await update.message.reply_text(msg, parse_mode="HTML")
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "transaction" in context.user_data:
