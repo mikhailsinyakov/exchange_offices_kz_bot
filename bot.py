@@ -151,6 +151,7 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
             await update.message.reply_text(_("need_number", lang))
             return
 
+        wait_msg = await update.message.reply_text(_("wait", lang) + " ...")
 
         sale_currency_name = context.user_data["transaction"]["sale_currency"]
         purchase_currency_name = context.user_data["transaction"]["purchase_currency"]
@@ -180,7 +181,8 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         
         msg = get_offices_info_msg(offices_info_for_display, purchase_amount, purchase_currency, lang)
         
-        await update.message.reply_text(msg, parse_mode="HTML")
+        await context.bot.edit_message_text(text=msg, chat_id=update.effective_chat.id, message_id=wait_msg.id, parse_mode="HTML")
+        #await update.message.reply_text(msg, parse_mode="HTML")
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "transaction" in context.user_data:
