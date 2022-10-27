@@ -15,7 +15,8 @@ logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO)
 
-load_dotenv()
+if os.path.exists(".env"):
+    load_dotenv()
 
 
 async def greet_user(update, context):

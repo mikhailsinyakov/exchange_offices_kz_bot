@@ -3,8 +3,8 @@ import os
 from urllib.parse import urlencode
 from dotenv import load_dotenv
 
-
-load_dotenv()
+if os.path.exists(".env"):
+    load_dotenv()
 
 def geocode(address):
     url = "https://geocode.search.hereapi.com/v1/geocode?"
