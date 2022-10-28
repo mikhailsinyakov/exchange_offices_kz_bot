@@ -1,6 +1,9 @@
 import re
+import math
+
 from constants import currencies
 from translation import translate as _
+from geocode import geocode
 
 def get_clean_address(address):
     street_index = address.find("ул.")
@@ -19,8 +22,30 @@ def get_clean_address(address):
     else:
         return address
 
+def get_offices_info_msg(offices, city, user_location, lang, transaction_info=None, purchase_amount=None):
+    offices_info = prepare_offices_for_display(offices, city, user_location)
+    return stringify_offices_info(offices_info, lang, transaction_info, purchase_amount)
 
-def get_offices_info_msg(offices_info_for_display, transaction_info=None, purchase_amount=None, lang="en"):
+def prepare_offices_for_display(offices, city, user_location):
+    offices_info = []
+    for best_office in offices:
+        office = {}
+        office["name"] = best_office["name"]
+        coords = geocode(f"Kazakhstan, {city}, {best_office['address']}")
+        if coords is not None:
+            distance = calc_distance(coords, user_location) if user_location is not None else None
+            if user_location is not None:
+                office["distance"] = distance
+            office["location"] = coords
+            office["google_maps_url"] = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
+            offices_info.append(office) 
+    if user_location is not None:
+        offices_info.sort(key=lambda d: d["distance"], reverse=False)
+    
+    return offices_info
+
+
+def stringify_offices_info(offices_info, lang, transaction_info=None, purchase_amount=None):
     if purchase_amount is None or transaction_info is None:
         results_str = ""
     else:
@@ -45,13 +70,25 @@ def get_offices_info_msg(offices_info_for_display, transaction_info=None, purcha
 
     offices_list_str = "<b>" + _("offices_list", lang) + "</b>" + ":\n"
 
-    for office in offices_info_for_display:
+    for office in offices_info:
         offices_list_str += f" - <b>{office['name']}</b> "
+        if "distance" in office:
+            offices_list_str += f"<b>({office['distance']:.2f}</b> km) "
 
-        if office["location"].startswith("https"):
-            link_url = office["location"]
-            offices_list_str += f"<a href='{link_url}'>{_('on_map', lang)}</a>" + "\n"
-        else:
-            offices_list_str += f"<i>{office['location']}</i>" + "\n"
+        link_url = office["google_maps_url"]
+        offices_list_str += f"<a href='{link_url}'>{_('on_map', lang)}</a>" + "\n"
 
     return results_str + "\n" + offices_list_str if results_str else offices_list_str
+
+
+def calc_distance(coords1, coords2):
+    def deg_to_rad(deg):
+        return deg * (math.pi/180)
+
+    R = 6371
+    d_lat = deg_to_rad(coords1[0]-coords2[0])
+    d_lng = deg_to_rad(coords1[1] - coords2[1])
+    a = math.sin(d_lat/2)*math.sin(d_lat/2) + math.cos(deg_to_rad(coords1[0]))*math.cos(deg_to_rad(coords2[0]))*math.sin(d_lng/2)*math.sin(d_lng/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    d = R * c
+    return d

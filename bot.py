@@ -8,7 +8,6 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 from constants import cities, currency_names, currencies
 from exchange_offices import get_offices_info, find_best_offices
 from helpers import get_offices_info_msg
-from geocode import geocode
 from translation import translate as _
 
 logging.basicConfig(
@@ -149,24 +148,12 @@ async def show_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     wait_msg = await update.message.reply_text(_("wait", lang) + " ...")
+    user_location = context.user_data.get("location", None)
 
     city = context.user_data["city"]
     all_offices = get_offices_info(city)
-    
-    offices_info_for_display = []
-    for best_office in all_offices:
-        office = {}
-        office["name"] = best_office["name"]
-        coords = geocode(f"Kazakhstan, {city}, {best_office['address']}")
-        if coords is not None:
-            link_url = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
-            office["location"] = link_url
-        else:
-            office["location"] = best_office["address"]
-        
-        offices_info_for_display.append(office)
-    
-    msg = get_offices_info_msg(offices_info_for_display, lang=lang)
+
+    msg = get_offices_info_msg(all_offices, city, user_location, lang)
     
     await context.bot.edit_message_text(text=msg, chat_id=update.effective_chat.id, message_id=wait_msg.id, parse_mode="HTML")
 
@@ -218,6 +205,8 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
 
         context.user_data["transaction"]["sale_amount"] = sale_amount
 
+        user_location = context.user_data.get("location", None)
+
         sale_currency = currencies[currency_names_locale.index(sale_currency_name)]
         purchase_currency = currencies[currency_names_locale.index(purchase_currency_name)]
         
@@ -225,20 +214,7 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         all_offices = get_offices_info(city)
         best_offices, purchase_amount = find_best_offices(all_offices, sale_currency, purchase_currency, sale_amount)
         
-        offices_info_for_display = []
-        for best_office in best_offices:
-            office = {}
-            office["name"] = best_office["name"]
-            coords = geocode(f"Kazakhstan, {city}, {best_office['address']}")
-            if coords is not None:
-                link_url = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
-                office["location"] = link_url
-            else:
-                office["location"] = best_office["address"]
-            
-            offices_info_for_display.append(office)
-        
-        msg = get_offices_info_msg(offices_info_for_display, context.user_data["transaction"], purchase_amount, lang)
+        msg = get_offices_info_msg(best_offices, city, user_location, lang, context.user_data["transaction"], purchase_amount)
 
         del context.user_data["transaction"]
         
