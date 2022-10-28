@@ -19,8 +19,11 @@ def get_clean_address(address):
         return address
 
 
-def get_offices_info_msg(offices_info_for_display, purchase_amount, purchase_currency, lang):
-    purchase_amount_str = _("your_purchase_amount", lang) + f" {purchase_amount:.2f}{purchase_currency}"
+def get_offices_info_msg(offices_info_for_display, purchase_amount=None, purchase_currency=None, lang="en"):
+    if purchase_amount is None:
+        purchase_amount_str = ""
+    else:
+        purchase_amount_str = _("your_purchase_amount", lang) + f" {purchase_amount:.2f}{purchase_currency}"
 
     offices_list_str = _("offices_list", lang) + ":\n"
 
@@ -33,4 +36,4 @@ def get_offices_info_msg(offices_info_for_display, purchase_amount, purchase_cur
         else:
             offices_list_str += f"<i>{office['location']}</i>" + "\n"
 
-    return purchase_amount_str + "\n" + offices_list_str
+    return purchase_amount_str + "\n" + offices_list_str if purchase_amount_str else offices_list_str

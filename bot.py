@@ -41,13 +41,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await context.bot.set_my_commands([
         BotCommand("find_best_offices", _("find_best_offices", "en")),
+        BotCommand("show_all_offices", _("show_all_offices", "en")),
         BotCommand("settings", _("show_settings", "en")),
         BotCommand("edit_city", _("edit_city", "en")),
         BotCommand("switch_language", _("switch_language", "en")),
         BotCommand("help", _("help", "en"))
     ])
     await context.bot.set_my_commands([
-        BotCommand("find_best_offices", _("find_best_offices", "ru")),
+        BotCommand("find_best_offices", _("find_best_offices", "en")),
+        BotCommand("show_all_offices", _("show_all_offices", "ru")),
         BotCommand("settings", _("show_settings", "ru")),
         BotCommand("edit_city", _("edit_city", "ru")),
         BotCommand("switch_language", _("switch_language", "ru")),
@@ -111,7 +113,7 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await context.bot.send_message(update.effective_chat.id, _("language_changed", new_lang))
 
-async def find_offices_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def find_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("language", "en")
     if "city" not in context.user_data:
         await update.message.reply_text(_("need_to_set_city", lang) + ". " + _("tap", lang) + " /edit_city")
@@ -128,6 +130,34 @@ async def find_offices_command_handler(update: Update, context: ContextTypes.DEF
     keyboard = ReplyKeyboardMarkup([currency_names_locale], one_time_keyboard=True, resize_keyboard=True)
 
     await update.message.reply_text(_("enter_sale_currency", lang) + ":", reply_markup=keyboard)
+
+async def show_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = context.user_data.get("language", "en")
+    if "city" not in context.user_data:
+        await update.message.reply_text(_("need_to_set_city", lang) + ". " + _("tap", lang) + " /edit_city")
+        return
+    
+    wait_msg = await update.message.reply_text(_("wait", lang) + " ...")
+
+    city = context.user_data["city"]
+    all_offices = get_offices_info(city)
+    
+    offices_info_for_display = []
+    for best_office in all_offices:
+        office = {}
+        office["name"] = best_office["name"]
+        coords = geocode(f"Kazakhstan, {city}, {best_office['address']}")
+        if coords is not None:
+            link_url = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
+            office["location"] = link_url
+        else:
+            office["location"] = best_office["address"]
+        
+        offices_info_for_display.append(office)
+    
+    msg = get_offices_info_msg(offices_info_for_display, lang=lang)
+    
+    await context.bot.edit_message_text(text=msg, chat_id=update.effective_chat.id, message_id=wait_msg.id, parse_mode="HTML")
 
 async def find_offices_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sale_currency_name = context.user_data["transaction"]["sale_currency"]
@@ -215,7 +245,8 @@ if __name__ == "__main__":
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("settings", show_settings))
-    app.add_handler(CommandHandler("find_best_offices", find_offices_command_handler))
+    app.add_handler(CommandHandler("find_best_offices", find_offices))
+    app.add_handler(CommandHandler("show_all_offices", show_offices))
     app.add_handler(CommandHandler("edit_city", choose_city))
     app.add_handler(CommandHandler("switch_language", change_language))
     app.add_handler(CommandHandler("help", help))
