@@ -103,7 +103,7 @@ async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(update.effective_chat.id, text_msg)
 
 async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    curr_lang = context.user_data["language"]
+    curr_lang = context.user_data.get("language", "en")
     new_lang = "ru" if curr_lang == "en" else "en"
     context.user_data["language"] = new_lang
 
@@ -203,13 +203,12 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         except ValueError:
             await update.message.reply_text(_("need_number", lang))
             return
-
         wait_msg = await update.message.reply_text(_("wait", lang) + " ...")
+
+        context.user_data["transaction"]["sale_amount"] = sale_amount
 
         sale_currency = currencies[currency_names_locale.index(sale_currency_name)]
         purchase_currency = currencies[currency_names_locale.index(purchase_currency_name)]
-        
-        del context.user_data["transaction"]
         
         city = context.user_data["city"]
         all_offices = get_offices_info(city)
@@ -228,7 +227,9 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
             
             offices_info_for_display.append(office)
         
-        msg = get_offices_info_msg(offices_info_for_display, purchase_amount, purchase_currency, lang)
+        msg = get_offices_info_msg(offices_info_for_display, context.user_data["transaction"], purchase_amount, lang)
+
+        del context.user_data["transaction"]
         
         await context.bot.edit_message_text(text=msg, chat_id=update.effective_chat.id, message_id=wait_msg.id, parse_mode="HTML")
 
