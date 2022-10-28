@@ -43,3 +43,5 @@ en:
   tenge: Tenge
   wait: Wait a second
   wrong_currency: Currency you entered is not supported
+  need_to_set_city: You need to choose a city
+  tap: Tap

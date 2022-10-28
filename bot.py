@@ -113,6 +113,9 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def find_offices_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = context.user_data.get("language", "en")
+    if "city" not in context.user_data:
+        await update.message.reply_text(_("need_to_set_city", lang) + ". " + _("tap", lang) + " /edit_city")
+        return
     currency_names_locale = [_(c, lang) for c in currency_names]
 
     context.user_data["transaction"] = {
