@@ -2,7 +2,7 @@ import os
 import logging
 
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, BotCommand
+from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, BotCommand, KeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters, PicklePersistence
 
 from constants import cities, currency_names, currencies
@@ -45,6 +45,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         BotCommand("settings", _("show_settings", "en")),
         BotCommand("edit_city", _("edit_city", "en")),
         BotCommand("switch_language", _("switch_language", "en")),
+        BotCommand("update_location", _("update_location", "en")),
         BotCommand("help", _("help", "en"))
     ])
     await context.bot.set_my_commands([
@@ -53,6 +54,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         BotCommand("settings", _("show_settings", "ru")),
         BotCommand("edit_city", _("edit_city", "ru")),
         BotCommand("switch_language", _("switch_language", "ru")),
+        BotCommand("update_location", _("update_location", "ru")),
         BotCommand("help", _("help", "ru"))
     ], language_code="ru")
 
@@ -101,6 +103,15 @@ async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.callback_query.answer()
     await context.bot.send_message(update.effective_chat.id, text_msg)
+
+    if "location" not in context.user_data:
+        await request_location(update, context)
+
+async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = context.user_data.get("language", "en")
+
+    keyboard = ReplyKeyboardMarkup([[KeyboardButton("Share location", request_location=True)]], one_time_keyboard=True, resize_keyboard=True)
+    await context.bot.send_message(update.effective_chat.id, _("can_share_location", lang), reply_markup=keyboard)
 
 async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     curr_lang = context.user_data.get("language", "en")
@@ -240,12 +251,21 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lang = context.user_data.get("language", "en")
         await update.message.reply_text(_("cant_understand", lang))
 
+async def location_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = context.user_data.get("language", "en")
+
+    location = update.message.location
+    context.user_data["location"] = location["latitude"], location["longitude"]
+
+    await update.message.reply_text(_("location_saved", lang))
+
 if __name__ == "__main__":
     my_persistence = PicklePersistence("data.pkl")
     app = ApplicationBuilder().token(os.environ.get("TELEGRAM_API_TOKEN")).persistence(my_persistence).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("settings", show_settings))
+    app.add_handler(CommandHandler("update_location", request_location))
     app.add_handler(CommandHandler("find_best_offices", find_offices))
     app.add_handler(CommandHandler("show_all_offices", show_offices))
     app.add_handler(CommandHandler("edit_city", choose_city))
@@ -256,5 +276,6 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(set_user_city, r"^set_user_city_[a-z]+"))
     app.add_handler(CallbackQueryHandler(change_language, "change_language"))
     app.add_handler(MessageHandler(filters=filters.TEXT, callback=message_handler))
+    app.add_handler(MessageHandler(filters=filters.LOCATION, callback=location_handler))
 
     app.run_polling()

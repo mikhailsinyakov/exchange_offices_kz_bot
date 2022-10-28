@@ -47,3 +47,6 @@ en:
   tap: Tap
   show_all_offices: Show all offices
   currency_exchange_rate: Currency exchange rate
+  can_share_location: You can also share your location to view distances to exchange offices
+  location_saved: Your location is saved
+  update_location: Update your location
