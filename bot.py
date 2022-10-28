@@ -3,7 +3,7 @@ import logging
 
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, BotCommand
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters, PicklePersistence
 
 from constants import cities, currency_names, currencies
 from exchange_offices import get_offices_info, find_best_offices
@@ -207,7 +207,8 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(_("cant_understand", lang))
 
 if __name__ == "__main__":
-    app = ApplicationBuilder().token(os.environ.get("TELEGRAM_API_TOKEN")).build()
+    my_persistence = PicklePersistence("data.pkl")
+    app = ApplicationBuilder().token(os.environ.get("TELEGRAM_API_TOKEN")).persistence(my_persistence).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("settings", show_settings))
