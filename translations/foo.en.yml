@@ -50,3 +50,4 @@ en:
   can_share_location: You can also share your location to view distances to exchange offices
   location_saved: Your location is saved
   update_location: Update your location
+  error_occured_geocode: An error occurred while getting coordinates of offices

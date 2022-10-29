@@ -3,7 +3,7 @@ import math
 
 from constants import currencies
 from translation import translate as _
-from geocode import geocode
+from geocode import geocode, batch_geocode
 
 def get_clean_address(address):
     street_index = address.find("ул.")
@@ -28,17 +28,26 @@ def get_offices_info_msg(offices, city, user_location, lang, transaction_info=No
 
 def prepare_offices_for_display(offices, city, user_location):
     offices_info = []
-    for best_office in offices:
-        office = {}
-        office["name"] = best_office["name"]
-        coords = geocode(f"Kazakhstan, {city}, {best_office['address']}")
+    addresses = {
+        "country": "KAZ",
+        "city": city,
+        "streets": [of["address"] for of in offices]
+    }
+    coords_list = batch_geocode(addresses)
+    if coords_list is None:
+        return []
+
+    for i, office in enumerate(offices):
+        new_office = {}
+        new_office["name"] = office["name"]
+        coords = coords_list[i]
         if coords is not None:
             distance = calc_distance(coords, user_location) if user_location is not None else None
             if user_location is not None:
-                office["distance"] = distance
-            office["location"] = coords
-            office["google_maps_url"] = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
-            offices_info.append(office) 
+                new_office["distance"] = distance
+            new_office["location"] = coords
+            new_office["google_maps_url"] = f"https://www.google.com/maps/dir//{coords[0]},{coords[1]}/"
+            offices_info.append(new_office) 
     if user_location is not None:
         offices_info.sort(key=lambda d: d["distance"], reverse=False)
     
@@ -46,6 +55,8 @@ def prepare_offices_for_display(offices, city, user_location):
 
 
 def stringify_offices_info(offices_info, lang, transaction_info=None, purchase_amount=None):
+    if not offices_info:
+        return _("error_occured_geocode", lang)
     if purchase_amount is None or transaction_info is None:
         results_str = ""
     else:
