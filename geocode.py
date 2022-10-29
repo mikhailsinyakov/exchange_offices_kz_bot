@@ -14,19 +14,24 @@ if os.path.exists(".env"):
     load_dotenv()
 
 def geocode(address):
-    url = "https://geocode.search.hereapi.com/v1/geocode?"
+    url = "https://geocoder.ls.hereapi.com/6.2/geocode.json?"
     query_params = {
         "apiKey": os.environ.get("GEOCODE_API_KEY"),
-        "q": address
+        "country": address["country"],
+        "city": address["city"],
+        "searchtext": address["street"]
     }
 
     r = requests.get(url + urlencode(query_params))
     if r.status_code != 200:
         return None
     
-    position = r.json()["items"][0]["position"]
-
-    return position["lat"], position["lng"]
+    try:
+        position = r.json()["Response"]["View"][0]["Result"][0]["Location"]["DisplayPosition"]
+        coords = position["Latitude"], position["Longitude"]
+        return coords
+    except KeyError:
+        return None
 
 def batch_geocode(addresses):
     url = "https://batch.geocoder.ls.hereapi.com/6.2/jobs?"
@@ -121,4 +126,9 @@ if __name__ == "__main__":
             "пр. Абылай хана, д. 31"
         ]
     }
-    print(batch_geocode(addresses))
+    address = {
+        "country": "KAZ",
+        "city": "Astana",
+        "street": "ул. Бейбитшилик, 40"
+    }
+    print(geocode(address))
