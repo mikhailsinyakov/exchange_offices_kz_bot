@@ -152,8 +152,10 @@ async def show_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     city = context.user_data["city"]
     all_offices = get_offices_info(city)
-
-    msg = get_offices_info_msg(all_offices, city, user_location, lang)
+    if not all_offices:
+        msg = _("no_offices_found", lang)
+    else:
+        msg = get_offices_info_msg(all_offices, city, user_location, lang)
     
     await context.bot.edit_message_text(text=msg, chat_id=update.effective_chat.id, message_id=wait_msg.id, parse_mode="HTML")
 

@@ -9,9 +9,11 @@ def get_clean_address(address):
     street_index = address.find("ул.")
     avenue_index = address.find("пр.")
     neighborhood_index = address.find("мкр")
+    if neighborhood_index == -1:
+        neighborhood_index = address.find("микрорайон")
     
     if neighborhood_index > -1 and (street_index == -1 or neighborhood_index < street_index) and (avenue_index == -1 or neighborhood_index < avenue_index):
-        pattern = r"[^,]*мкр\.?([^,]+)?,\s(ул\.\s?[^,\d]+,)?\s?((д.\s)|(дом\s))?\d+"
+        pattern = r"[^,]*((мкр\.?)|(микрорайон))([^,]+)?,\s(ул\.\s?[^,\d]+,)?\s?((д.\s)|(дом\s))?\d+"
         return re.search(pattern, address)[0]
     elif "ул." in address or "пр." in address:
         pattern = r"[уп][лр]\.\s?[^,\d]+,?\s(д\.\s)?\d+(\/\d+)?"
@@ -24,7 +26,13 @@ def get_clean_address(address):
 
 def get_offices_info_msg(offices, city, user_location, lang, transaction_info=None, purchase_amount=None):
     offices_info = prepare_offices_for_display(offices, city, user_location)
-    return stringify_offices_info(offices_info, lang, transaction_info, purchase_amount)
+
+    if offices_info is None:
+        return _("error_occured_geocode", lang)
+    elif not offices_info:
+        return _("no_offices_found", lang)
+    else:
+        return stringify_offices_info(offices_info, lang, transaction_info, purchase_amount)
 
 def prepare_offices_for_display(offices, city, user_location):
     offices_info = []
@@ -33,9 +41,16 @@ def prepare_offices_for_display(offices, city, user_location):
         "city": city,
         "streets": [of["address"] for of in offices]
     }
-    coords_list = batch_geocode(addresses)
-    if coords_list is None:
-        return []
+    use_batch = len(offices) > 12
+    if use_batch:
+        coords_list = batch_geocode(addresses)
+        if coords_list is None:
+            return None
+    else:
+        coords_list = []
+        for street in addresses["streets"]:
+            coords = geocode({"country": addresses["country"], "city": addresses["city"], "street": street})
+            coords_list.append(coords)
 
     for i, office in enumerate(offices):
         new_office = {}
@@ -55,8 +70,6 @@ def prepare_offices_for_display(offices, city, user_location):
 
 
 def stringify_offices_info(offices_info, lang, transaction_info=None, purchase_amount=None):
-    if not offices_info:
-        return _("error_occured_geocode", lang)
     if purchase_amount is None or transaction_info is None:
         results_str = ""
     else:

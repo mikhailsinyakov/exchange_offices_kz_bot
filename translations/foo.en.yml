@@ -51,3 +51,4 @@ en:
   location_saved: Your location is saved
   update_location: Update your location
   error_occured_geocode: An error occurred while getting coordinates of offices
+  no_offices_found: No offices were found

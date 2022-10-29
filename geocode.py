@@ -30,7 +30,7 @@ def geocode(address):
         position = r.json()["Response"]["View"][0]["Result"][0]["Location"]["DisplayPosition"]
         coords = position["Latitude"], position["Longitude"]
         return coords
-    except KeyError:
+    except (KeyError, IndexError):
         return None
 
 def batch_geocode(addresses):
@@ -110,7 +110,10 @@ def get_batch_job_results(request_id):
         cols = line.split("|")
         req_id = int(cols[0])
         if req_id == should_be_req_id:
-            coords_list.append((float(cols[3]), float(cols[4])))
+            if cols[3] and cols[4]:
+                coords_list.append((float(cols[3]), float(cols[4])))
+            else:
+                coords_list.append(None)
             should_be_req_id += 1
     return coords_list
     

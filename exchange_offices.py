@@ -29,7 +29,6 @@ def get_offices_info(city):
 
         office["name"] = office_elem.select_one(".tab").get_text()
         office["address"] = get_clean_address(office_elem.select_one("address").get_text())
-        
         currencies_elems = office_elem.select(".currency")
 
         for i, curr in enumerate(["USD", "EUR", "RUB"]):
