@@ -3,7 +3,7 @@ import math
 
 from constants import currencies
 from translation import translate as _
-from geocode import geocode, batch_geocode
+from geocode import geocode
 
 def get_clean_address(address):
     street_index = address.find("ул.")
@@ -24,8 +24,8 @@ def get_clean_address(address):
     else:
         return address
 
-def get_offices_info_msg(offices, city, user_location, lang, transaction_info=None, purchase_amount=None):
-    offices_info = prepare_offices_for_display(offices, city, user_location)
+def get_offices_info_msg(offices, city, user_location, lang, context, transaction_info=None, purchase_amount=None):
+    offices_info = prepare_offices_for_display(offices, city, user_location, context)
 
     if offices_info is None:
         return _("error_occured_geocode", lang)
@@ -34,24 +34,31 @@ def get_offices_info_msg(offices, city, user_location, lang, transaction_info=No
     else:
         return stringify_offices_info(offices_info, lang, transaction_info, purchase_amount)
 
-def prepare_offices_for_display(offices, city, user_location):
-    offices_info = []
-    addresses = {
-        "country": "KAZ",
-        "city": city,
-        "streets": [of["address"] for of in offices]
-    }
-    use_batch = len(offices) > 12
-    if use_batch:
-        coords_list = batch_geocode(addresses)
-        if coords_list is None:
-            return None
-    else:
-        coords_list = []
-        for street in addresses["streets"]:
-            coords = geocode({"country": addresses["country"], "city": addresses["city"], "street": street})
-            coords_list.append(coords)
+def prepare_offices_for_display(offices, city, user_location, context):
+    coords_list = []
+    offices_to_check = []
 
+    for i, office in enumerate(offices):
+        cache = context.bot_data["geocode_cache"]
+        key = f"{city}, {office['address']}"
+        if key in cache:
+            coords_list.append({"i": i, "coords": cache[key]})
+        else:
+            offices_to_check.append({"i": i, "office": office})
+
+    for of in offices_to_check:
+        i = of["i"]
+        office = of["office"]
+        street = office["address"]
+        coords = geocode({"country": "KAZ", "city": city, "street": street})
+        key = f"{city}, {street}"
+        context.bot_data["geocode_cache"][key] = coords
+        coords_list.append({"i": i, "coords": coords})
+    
+    coords_list.sort(key=lambda d: d["i"])
+    coords_list = [coords_info["coords"] for coords_info in coords_list]
+
+    offices_info = []
     for i, office in enumerate(offices):
         new_office = {}
         new_office["name"] = office["name"]

@@ -60,6 +60,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     suggested_language = "ru" if user_lang == "ru" else "en"
 
     context.user_data["language"] = suggested_language
+    context.bot_data["geocode_cache"] = {}
     await greet_user(update, context)
 
 async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -124,6 +125,9 @@ async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(update.effective_chat.id, _("language_changed", new_lang))
 
 async def find_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if "geocode_cache" not in context.bot_data:
+        context.bot_data["geocode_cache"] = {}
+        
     lang = context.user_data.get("language", "en")
     if "city" not in context.user_data:
         await update.message.reply_text(_("need_to_set_city", lang) + ". " + _("tap", lang) + " /edit_city")
@@ -142,6 +146,9 @@ async def find_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(_("enter_sale_currency", lang) + ":", reply_markup=keyboard)
 
 async def show_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if "geocode_cache" not in context.bot_data:
+        context.bot_data["geocode_cache"] = {}
+    
     lang = context.user_data.get("language", "en")
     if "city" not in context.user_data:
         await update.message.reply_text(_("need_to_set_city", lang) + ". " + _("tap", lang) + " /edit_city")
@@ -155,7 +162,7 @@ async def show_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not all_offices:
         msg = _("no_offices_found", lang)
     else:
-        msg = get_offices_info_msg(all_offices, city, user_location, lang)
+        msg = get_offices_info_msg(all_offices, city, user_location, lang, context)
     
     await context.bot.edit_message_text(text=msg, chat_id=update.effective_chat.id, message_id=wait_msg.id, parse_mode="HTML")
 
@@ -216,7 +223,7 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         all_offices = get_offices_info(city)
         best_offices, purchase_amount = find_best_offices(all_offices, sale_currency, purchase_currency, sale_amount)
         
-        msg = get_offices_info_msg(best_offices, city, user_location, lang, context.user_data["transaction"], purchase_amount)
+        msg = get_offices_info_msg(best_offices, city, user_location, lang, context, context.user_data["transaction"], purchase_amount)
 
         del context.user_data["transaction"]
         
