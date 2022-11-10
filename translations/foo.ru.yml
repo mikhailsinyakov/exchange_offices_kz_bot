@@ -6,7 +6,6 @@ ru:
   find_best_offices: Найти обменники с лучшими курсами валют
   show_settings: Показать текущие настройки
   edit_city: Изменить город
-  switch_language: Изменить язык на английский
   help: Помощь
   city: Город
   language: Язык
@@ -39,7 +38,7 @@ ru:
   petropavlovsk: Петропавловск
   dollar: Доллар
   euro: Евро
-  rouble: Рубль
+  ruble: Рубль
   tenge: Тенге
   wait: Подождите
   wrong_currency: Валюта, которую вы ввели, не поддерживается

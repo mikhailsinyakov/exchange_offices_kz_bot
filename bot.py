@@ -19,15 +19,9 @@ if os.path.exists(".env"):
 
 
 async def greet_user(update, context):
-    lang = context.user_data.get("language", "en")
-    button_keys = ["choose_city", "switch_language_foreign"]
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
 
-    keyboard = InlineKeyboardMarkup(
-        [[
-            InlineKeyboardButton(_(button_keys[0], lang), callback_data="choose_city"),
-            InlineKeyboardButton(_(button_keys[1], lang), callback_data="change_language")
-        ]]
-    )
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(_("choose_city", lang), callback_data="choose_city")]])
     greeting_msg = f"{_('hi', lang)}, <b>{update.effective_user.first_name}!</b> {_('greeting', lang)}"
 
     if update.message is not None:
@@ -36,14 +30,13 @@ async def greet_user(update, context):
         await update.callback_query.edit_message_text(greeting_msg, parse_mode="HTML", reply_markup=keyboard)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_lang = update.effective_user.language_code
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
     
     await context.bot.set_my_commands([
         BotCommand("find_best_offices", _("find_best_offices", "en")),
         BotCommand("show_all_offices", _("show_all_offices", "en")),
         BotCommand("settings", _("show_settings", "en")),
         BotCommand("edit_city", _("edit_city", "en")),
-        BotCommand("switch_language", _("switch_language", "en")),
         BotCommand("update_location", _("update_location", "en")),
         BotCommand("help", _("help", "en"))
     ])
@@ -52,20 +45,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         BotCommand("show_all_offices", _("show_all_offices", "ru")),
         BotCommand("settings", _("show_settings", "ru")),
         BotCommand("edit_city", _("edit_city", "ru")),
-        BotCommand("switch_language", _("switch_language", "ru")),
         BotCommand("update_location", _("update_location", "ru")),
         BotCommand("help", _("help", "ru"))
     ], language_code="ru")
 
-    suggested_language = "ru" if user_lang == "ru" else "en"
-
-    context.user_data["language"] = suggested_language
     context.bot_data["geocode_cache"] = {}
     await greet_user(update, context)
 
 async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     city = context.user_data.get("city", "Unset")
-    lang = context.user_data.get("language", "Unset")
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
 
     msg = f"<b>{_('city', lang)}</b>: {city.capitalize()}" + "\n"
     msg += f"<b>{_('language', lang)}</b>: {_('current_language', lang)}"
@@ -73,11 +62,11 @@ async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode="HTML")
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = context.user_data.get("language", "en")
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
     await update.message.reply_text(_("help_text", lang))
 
 async def choose_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = context.user_data.get("language", "en")
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
     n_keyboard_cols = 3
     btns = []
     for i in range(len(cities)):
@@ -95,7 +84,7 @@ async def choose_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(update.effective_chat.id, text_msg, reply_markup=keyboard)
 
 async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = context.user_data.get("language", "en")
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
     city = update.callback_query.data.split("_")[-1]
 
     context.user_data["city"] = city
@@ -108,27 +97,16 @@ async def set_user_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await request_location(update, context)
 
 async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = context.user_data.get("language", "en")
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
 
     keyboard = ReplyKeyboardMarkup([[KeyboardButton("Share location", request_location=True)]], one_time_keyboard=True, resize_keyboard=True)
     await context.bot.send_message(update.effective_chat.id, _("can_share_location", lang), reply_markup=keyboard)
-
-async def change_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    curr_lang = context.user_data.get("language", "en")
-    new_lang = "ru" if curr_lang == "en" else "en"
-    context.user_data["language"] = new_lang
-
-    if update.callback_query is not None:
-        await update.callback_query.answer()
-        await greet_user(update, context)
-    else:
-        await context.bot.send_message(update.effective_chat.id, _("language_changed", new_lang))
 
 async def find_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "geocode_cache" not in context.bot_data:
         context.bot_data["geocode_cache"] = {}
         
-    lang = context.user_data.get("language", "en")
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
     if "city" not in context.user_data:
         await update.message.reply_text(_("need_to_set_city", lang) + ". " + _("tap", lang) + " /edit_city")
         return
@@ -149,7 +127,7 @@ async def show_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "geocode_cache" not in context.bot_data:
         context.bot_data["geocode_cache"] = {}
     
-    lang = context.user_data.get("language", "en")
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
     if "city" not in context.user_data:
         await update.message.reply_text(_("need_to_set_city", lang) + ". " + _("tap", lang) + " /edit_city")
         return
@@ -167,13 +145,14 @@ async def show_offices(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.edit_message_text(text=msg, chat_id=update.effective_chat.id, message_id=wait_msg.id, parse_mode="HTML")
 
 async def find_offices_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
+
     sale_currency_name = context.user_data["transaction"]["sale_currency"]
     purchase_currency_name = context.user_data["transaction"]["purchase_currency"]
     sale_amount = context.user_data["transaction"]["sale_amount"]
     currency_names_locale = context.user_data["transaction"]["currency_names_locale"]
 
     if sale_currency_name is None:
-        lang = context.user_data.get("language", "en")
         new_sale_currency = update.message.text
 
         if new_sale_currency not in currency_names_locale:
@@ -189,7 +168,6 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         keyboard = ReplyKeyboardMarkup([currencies_to_show], one_time_keyboard=True, resize_keyboard=True)
         await update.message.reply_text(_("enter_purchase_currency", lang) + ":", reply_markup=keyboard)
     elif purchase_currency_name is None:
-        lang = context.user_data.get("language", "en")
         new_purchase_currency = update.message.text
 
         if new_purchase_currency not in currency_names_locale:
@@ -204,7 +182,6 @@ async def find_offices_message_handler(update: Update, context: ContextTypes.DEF
         await update.message.reply_text(_("enter_sale_amount", lang) + ":")
         
     elif sale_amount is None:
-        lang = context.user_data.get("language", "en")
         try:
             sale_amount = float(update.message.text)
         except ValueError:
@@ -233,11 +210,11 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "transaction" in context.user_data:
         await find_offices_message_handler(update, context)
     else:
-        lang = context.user_data.get("language", "en")
+        lang = "ru" if update.effective_user.language_code == "ru" else "en"
         await update.message.reply_text(_("cant_understand", lang))
 
 async def location_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = context.user_data.get("language", "en")
+    lang = "ru" if update.effective_user.language_code == "ru" else "en"
 
     location = update.message.location
     context.user_data["location"] = location["latitude"], location["longitude"]
@@ -254,12 +231,10 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("find_best_offices", find_offices))
     app.add_handler(CommandHandler("show_all_offices", show_offices))
     app.add_handler(CommandHandler("edit_city", choose_city))
-    app.add_handler(CommandHandler("switch_language", change_language))
     app.add_handler(CommandHandler("help", help))
 
     app.add_handler(CallbackQueryHandler(choose_city, "choose_city"))
     app.add_handler(CallbackQueryHandler(set_user_city, r"^set_user_city_[a-z]+"))
-    app.add_handler(CallbackQueryHandler(change_language, "change_language"))
     app.add_handler(MessageHandler(filters=filters.TEXT, callback=message_handler))
     app.add_handler(MessageHandler(filters=filters.LOCATION, callback=location_handler))
 

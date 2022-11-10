@@ -6,7 +6,6 @@ en:
   find_best_offices: Find offices with best currency rates
   show_settings: Show current settings
   edit_city: Edit your current city
-  switch_language: Switch language to Russian
   help: Get help
   city: City
   language: Language
@@ -39,7 +38,7 @@ en:
   petropavlovsk: Petropavlovsk
   dollar: Dollar
   euro: Euro
-  rouble: Rouble
+  ruble: Ruble
   tenge: Tenge
   wait: Wait a second
   wrong_currency: Currency you entered is not supported
